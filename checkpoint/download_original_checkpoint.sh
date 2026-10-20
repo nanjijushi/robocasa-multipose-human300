@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEST_ROOT="${1:-/root/gpufree-data/robocasa365_checkpoints}"
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+REPO_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
+DEST_ROOT="${1:-$REPO_ROOT/robocasa365_checkpoints}"
 REPO="robocasa/robocasa365_checkpoints"
 REVISION="c484448aba1a9b60a04c9b0ca117241518ea69f3"
 PREFIX="pi05_pretrain_human300/multitask_learning/75000/**"

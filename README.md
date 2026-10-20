@@ -43,17 +43,15 @@ The tested server environment is Ubuntu 22.04, Python 3.11, CUDA with one RTX
 0.5.3, and jaxlib 0.5.3. GPU drivers and the CUDA-enabled JAX build must match
 the CUDA installation on the target machine.
 
-Create the Python environment and install the pinned source trees:
+Create the Python environment, then let the repository install the pinned
+source trees and apply the included OpenPI compatibility patch:
 
 ```bash
 conda create -c conda-forge -n robocasa python=3.11 -y
 conda activate robocasa
 
 python -m pip install --upgrade pip
-python -m pip install -e third_party/robosuite
-python -m pip install -e third_party/robocasa
-python -m pip install -e third_party/openpi
-python -m pip install -e third_party/openpi/packages/openpi-client
+bash scripts/setup_repository.sh
 ```
 
 The data-collection utilities additionally use Pillow, NumPy, ImageIO, and
@@ -83,20 +81,6 @@ sudo apt-get update
 sudo apt-get install -y libosmesa6 libosmesa6-dev libgl1-mesa-glx libglfw3
 ```
 
-For the established `/root/gpufree-data` server layout, create links so the
-absolute paths used by the scripts resolve without editing them:
-
-```bash
-ROOT=/root/gpufree-data
-REPO="$ROOT/robocasa-multipose-human300"
-
-ln -sfn "$REPO/third_party/robocasa" "$ROOT/robocasa"
-ln -sfn "$REPO/third_party/openpi" "$ROOT/openpi"
-ln -sfn "$REPO/third_party/robosuite" "$ROOT/robosuite"
-mkdir -p "$ROOT/view_discriminator_pilot"
-cp "$REPO"/scripts/* "$ROOT/view_discriminator_pilot/"
-```
-
 Headless collection uses software-rendered MuJoCo in the tested launcher:
 
 ```bash
@@ -104,11 +88,12 @@ export MUJOCO_GL=osmesa
 export PYOPENGL_PLATFORM=osmesa
 unset MUJOCO_EGL_DEVICE_ID
 export XLA_PYTHON_CLIENT_PREALLOCATE=false
-export PYTHONPATH=/root/gpufree-data/openpi/src:/root/gpufree-data/openpi/packages/openpi-client/src:/root/gpufree-data/robocasa:/root/gpufree-data/robosuite
+export PYTHONPATH="$PWD/third_party/openpi/src:$PWD/third_party/openpi/packages/openpi-client/src:$PWD/third_party/robocasa:$PWD/third_party/robosuite"
 ```
 
-The pinned robosuite checkout is linked at `/root/gpufree-data/robosuite` and is
-kept on `PYTHONPATH`, matching the tested server layout.
+The launcher computes all project paths from its own repository location. For a
+nonstandard layout, override `ROBOCASA_WORK_ROOT`, `OPENPI_DIR`,
+`ROBOCASA_DIR`, `ROBOSUITE_DIR`, `PYTHON_BIN`, or `PI05_CHECKPOINT`.
 
 ## Download the original checkpoint
 
@@ -117,13 +102,13 @@ GitHub's regular Git/LFS limits. It therefore remains in RoboCasa's official
 Hugging Face model repository rather than being copied into Git history.
 
 ```bash
-bash checkpoint/download_original_checkpoint.sh /root/gpufree-data/robocasa365_checkpoints
+bash checkpoint/download_original_checkpoint.sh
 ```
 
 Expected policy path after download:
 
 ```text
-/root/gpufree-data/robocasa365_checkpoints/pi05_pretrain_human300/multitask_learning/75000
+./robocasa365_checkpoints/pi05_pretrain_human300/multitask_learning/75000
 ```
 
 Official source: https://huggingface.co/robocasa/robocasa365_checkpoints
@@ -134,7 +119,7 @@ Pinned model-repository revision:
 Verify the required checkpoint files:
 
 ```bash
-CKPT=/root/gpufree-data/robocasa365_checkpoints/pi05_pretrain_human300/multitask_learning/75000
+CKPT="$PWD/robocasa365_checkpoints/pi05_pretrain_human300/multitask_learning/75000"
 test -f "$CKPT/_CHECKPOINT_METADATA"
 test -f "$CKPT/assets/norm_stats.json"
 test -f "$CKPT/params/_METADATA"
@@ -148,9 +133,9 @@ session. It evaluates 40 scene seeds, five generated base poses per scene, and
 five repeated trials per pose.
 
 ```bash
-cd /root/gpufree-data
+cd robocasa-multipose-human300
 conda activate robocasa
-bash view_discriminator_pilot/run_opendrawer_multipose_4090_40seed_v1.sh
+bash scripts/run_opendrawer_multipose_4090_40seed_v1.sh
 ```
 
 Monitor it with:
@@ -159,13 +144,14 @@ Monitor it with:
 tmux attach -t opendrawer_40seed_4090_v1
 ```
 
-## Server layout
+## Repository-specific OpenPI files
 
-The scripts preserve the established server layout under `/root/gpufree-data`.
-After cloning, link or copy the repository scripts into
-`/root/gpufree-data/view_discriminator_pilot`, and place the two submodules at
-`/root/gpufree-data/robocasa` and `/root/gpufree-data/openpi`, or adjust the
-`ROOT` constants in the scripts.
+`scripts/main_camera_sweep.py` is included directly because it is the evaluator
+used by this data collector and is not part of the pinned upstream OpenPI
+commit. `patches/openpi_robocasa_multipose.patch` adds the inference-only
+`pi05_pretrain_human300_inference` config and deterministic sample-noise support
+required by that evaluator. `scripts/setup_repository.sh` applies the patch and
+is safe to rerun.
 
 ## Licenses
 

@@ -10,9 +10,13 @@ import sys
 os.environ.setdefault("MUJOCO_GL", "osmesa")
 os.environ.setdefault("PYOPENGL_PLATFORM", "osmesa")
 
-ROOT = Path("/root/gpufree-data")
-for part in ("view_discriminator_pilot", "robocasa", "robosuite"):
-    sys.path.insert(0, str(ROOT / part))
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parent
+ROOT = Path(os.environ.get("ROBOCASA_WORK_ROOT", REPO_ROOT))
+ROBOCASA_DIR = Path(os.environ.get("ROBOCASA_DIR", REPO_ROOT / "third_party/robocasa"))
+ROBOSUITE_DIR = Path(os.environ.get("ROBOSUITE_DIR", REPO_ROOT / "third_party/robosuite"))
+for part in (SCRIPT_DIR, ROBOCASA_DIR, ROBOSUITE_DIR):
+    sys.path.insert(0, str(part))
 
 import numpy as np
 from PIL import Image, ImageDraw
@@ -27,7 +31,7 @@ def main():
     parser.add_argument("--min-drawer-visible-px", type=int, default=250)
     parser.add_argument("--collision-tolerance-m", type=float, default=0.002)
     parser.add_argument("--out-root", type=Path, default=
-                        ROOT / "实验结果" / "20261020_OpenDrawer同场景多出生点检查_v1")
+                        ROOT / "results" / "OpenDrawer_same_scene_multipose_preview_v2")
     args = parser.parse_args()
 
     import gymnasium as gym

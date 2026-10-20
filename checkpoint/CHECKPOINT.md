@@ -5,8 +5,8 @@
 - Subdirectory: `pi05_pretrain_human300/multitask_learning/75000`
 - Training step: `75000`
 - Complete upstream size at the time of packaging: approximately 44.7 GB
-- Local policy path used by the launcher:
-  `/root/gpufree-data/robocasa365_checkpoints/pi05_pretrain_human300/multitask_learning/75000`
+- Default local policy path used by the launcher:
+  `<repository>/robocasa365_checkpoints/pi05_pretrain_human300/multitask_learning/75000`
 
 The complete original checkpoint includes `assets`, `params`, `train_state`, and
 `_CHECKPOINT_METADATA`. The `train_state` is retained by the download script so

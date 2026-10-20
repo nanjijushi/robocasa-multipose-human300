@@ -28,8 +28,10 @@ import imageio.v2 as imageio_v2
 import numpy as np
 
 
-ROOT = Path("/root/gpufree-data")
-EXAMPLES = ROOT / "openpi/examples/robocasa"
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parent
+ROOT = Path(os.environ.get("ROBOCASA_WORK_ROOT", REPO_ROOT))
+EXAMPLES = SCRIPT_DIR
 # These must be set before importing RoboCasa / MuJoCo.  This container exposes
 # CUDA compute but currently enumerates zero NVIDIA EGL devices, so use the
 # verified OSMesa headless renderer. Policy inference still runs on GPU.
@@ -43,8 +45,11 @@ if str(EXAMPLES) not in sys.path:
 import main_camera_sweep as sweep  # noqa: E402
 
 
-DEFAULT_OUT = ROOT / "实验结果/20261018_OpenDrawer默认位姿_100seed每seed10次_右主视角黑_v1"
-BASE_CHECKPOINT = ROOT / "robocasa365_checkpoints/pi05_pretrain_human300/multitask_learning/75000"
+DEFAULT_OUT = ROOT / "results/OpenDrawer_default100x10_v1"
+BASE_CHECKPOINT = Path(os.environ.get(
+    "PI05_CHECKPOINT",
+    ROOT / "robocasa365_checkpoints/pi05_pretrain_human300/multitask_learning/75000",
+))
 _original_mimwrite = imageio_v2.mimwrite
 
 

@@ -5,9 +5,14 @@ import argparse, csv, json, os, subprocess, sys
 from pathlib import Path
 import numpy as np
 
-ROOT = Path("/root/gpufree-data")
-PILOT = ROOT / "view_discriminator_pilot"
-for p in (PILOT, ROOT/"robocasa", ROOT/"robosuite", ROOT/"openpi/examples/robocasa"):
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parent
+ROOT = Path(os.environ.get("ROBOCASA_WORK_ROOT", REPO_ROOT))
+PILOT = SCRIPT_DIR
+ROBOCASA_DIR = Path(os.environ.get("ROBOCASA_DIR", REPO_ROOT/"third_party/robocasa"))
+ROBOSUITE_DIR = Path(os.environ.get("ROBOSUITE_DIR", REPO_ROOT/"third_party/robosuite"))
+OPENPI_DIR = Path(os.environ.get("OPENPI_DIR", REPO_ROOT/"third_party/openpi"))
+for p in (PILOT, ROBOCASA_DIR, ROBOSUITE_DIR, OPENPI_DIR/"examples/robocasa"):
     sys.path.insert(0, str(p))
 os.environ.setdefault("MUJOCO_GL", "osmesa")
 os.environ.setdefault("PYOPENGL_PLATFORM", "osmesa")
@@ -51,6 +56,8 @@ def aggregate(out, worker, seeds, trials):
     rows=[]
     for seed in seeds:
         scene=out/f"scene_seed_{seed:03d}"
+        if not scene.is_dir():
+            continue
         for pose_dir in sorted(x for x in scene.iterdir() if x.is_dir() and x.name.startswith("P")):
             s=base.read_json(pose_dir/"summary.json") or {}; st=(((s.get("variants") or {}).get("baseline") or {}).get("stats") or {})
             eps=st.get("episode_results") or []

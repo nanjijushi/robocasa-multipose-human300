@@ -1,0 +1,89 @@
+diff --git a/packages/openpi-client/src/openpi_client/websocket_client_policy.py b/packages/openpi-client/src/openpi_client/websocket_client_policy.py
+index b5feeac..a07b050 100644
+--- a/packages/openpi-client/src/openpi_client/websocket_client_policy.py
++++ b/packages/openpi-client/src/openpi_client/websocket_client_policy.py
+@@ -43,13 +43,19 @@ class WebsocketClientPolicy(_base_policy.BasePolicy):
+                     compression=None,
+                     max_size=None,
+                     additional_headers=headers,
++                    proxy=None,
+                     ping_interval=ping_interval,
+                     ping_timeout=ping_timeout,
+                 )
+                 metadata = msgpack_numpy.unpackb(conn.recv())
+                 return conn, metadata
+-            except ConnectionRefusedError:
+-                logging.info("Still waiting for server...")
++            except (ConnectionRefusedError, TimeoutError, OSError) as exc:
++                logging.info(
++                    "Server at %s is not ready yet (%s: %s); retrying...",
++                    self._uri,
++                    exc.__class__.__name__,
++                    exc,
++                )
+                 time.sleep(5)
+ 
+     @override
+@@ -64,4 +70,4 @@ class WebsocketClientPolicy(_base_policy.BasePolicy):
+ 
+     @override
+     def reset(self) -> None:
+-        pass
+\ No newline at end of file
++        pass
+diff --git a/src/openpi/serving/websocket_policy_server.py b/src/openpi/serving/websocket_policy_server.py
+index bdefa98..29caee6 100644
+--- a/src/openpi/serving/websocket_policy_server.py
++++ b/src/openpi/serving/websocket_policy_server.py
+@@ -56,9 +56,15 @@ class WebsocketPolicyServer:
+             try:
+                 start_time = time.monotonic()
+                 obs = msgpack_numpy.unpackb(await websocket.recv())
++                sample_noise = None
++                if isinstance(obs, dict):
++                    sample_noise = obs.pop("_openpi_sample_noise", None)
+ 
+                 infer_time = time.monotonic()
+-                action = self._policy.infer(obs)
++                if sample_noise is None:
++                    action = self._policy.infer(obs)
++                else:
++                    action = self._policy.infer(obs, noise=sample_noise)
+                 infer_time = time.monotonic() - infer_time
+ 
+                 action["server_timing"] = {
+diff --git a/src/openpi/training/config.py b/src/openpi/training/config.py
+index 7f2770c..1b1a62f 100644
+--- a/src/openpi/training/config.py
++++ b/src/openpi/training/config.py
+@@ -1293,6 +1293,30 @@ _CONFIGS = [
+         batch_size=64,
+         num_workers=4,
+     ),
++    TrainConfig(
++        name="pi05_pretrain_human300_inference",
++        model=pi0_config.Pi0Config(
++            pi05=True,
++            max_token_len=200,
++        ),
++        # Inference-only config for serving downloaded RoboCasa pi0.5 checkpoints
++        # without requiring the full pretrain_human300 dataset tree locally.
++        data=LeRobotRobocasaDataConfig(
++            data_dirs=[],
++        ),
++	    weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_base/params"),
++        lr_schedule=_optimizer.CosineDecaySchedule(
++            warmup_steps=1_000,
++            peak_lr=2.5e-5,
++            decay_steps=100000,
++            decay_lr=2.5e-6,
++        ),
++        num_train_steps=100000,
++        save_interval=5000,
++        keep_period=10000,
++        batch_size=64,
++        num_workers=4,
++    ),
+     TrainConfig(
+         name="pi05-og_robocasa_pickplacetoastertocounter",
+         model=pi0_config.Pi0Config(
