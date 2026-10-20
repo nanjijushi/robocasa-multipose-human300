@@ -1,0 +1,20 @@
+__pycache__/
+*.py[cod]
+*.log
+.idea/
+.vscode/
+
+# Generated experiments and previews
+results/
+outputs/
+experiment_results/
+
+# Model weights must be downloaded from the official pinned source.
+robocasa365_checkpoints/
+checkpoint/pi05_pretrain_human300/
+*.ckpt
+*.safetensors
+*.bin
+*.npz
+*.npy
+
