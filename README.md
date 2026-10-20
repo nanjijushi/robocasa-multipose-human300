@@ -18,6 +18,8 @@ official original `pi05_pretrain_human300` checkpoint locator.
   `b4684e6ee37d377cc392e98302a6b916d588b415`.
 - `third_party/openpi`: RoboCasa OpenPI pinned at commit
   `5a6beda9ff99da30b4e1b59320f6a32971d7c397`.
+- `third_party/robosuite`: robosuite pinned at the tested server commit
+  `5ce6643f3092639d08f7b0f90ed1c6a84f50552c`.
 - `checkpoint/download_original_checkpoint.sh`: downloads the complete official
   original checkpoint from Hugging Face into the layout used by the scripts.
 
@@ -48,6 +50,7 @@ conda create -c conda-forge -n robocasa python=3.11 -y
 conda activate robocasa
 
 python -m pip install --upgrade pip
+python -m pip install -e third_party/robosuite
 python -m pip install -e third_party/robocasa
 python -m pip install -e third_party/openpi
 python -m pip install -e third_party/openpi/packages/openpi-client
@@ -60,6 +63,26 @@ Gymnasium. Install them if they were not pulled in by the upstream packages:
 python -m pip install pillow numpy imageio imageio-ffmpeg gymnasium==0.29.1
 ```
 
+Initialize RoboCasa's local macros and download the official kitchen assets.
+The upstream downloader reports roughly 10 GB; allow additional working and
+extraction space. The assets come from NVIDIA's official Hugging Face dataset,
+not from this Git repository.
+
+```bash
+python -m robocasa.scripts.setup_macros
+python -m robocasa.scripts.download_kitchen_assets
+```
+
+Official asset source:
+https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-Manipulation-Objects-Kitchen-MJCF
+
+On Ubuntu, the headless OSMesa renderer may additionally require:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y libosmesa6 libosmesa6-dev libgl1-mesa-glx libglfw3
+```
+
 For the established `/root/gpufree-data` server layout, create links so the
 absolute paths used by the scripts resolve without editing them:
 
@@ -69,6 +92,7 @@ REPO="$ROOT/robocasa-multipose-human300"
 
 ln -sfn "$REPO/third_party/robocasa" "$ROOT/robocasa"
 ln -sfn "$REPO/third_party/openpi" "$ROOT/openpi"
+ln -sfn "$REPO/third_party/robosuite" "$ROOT/robosuite"
 mkdir -p "$ROOT/view_discriminator_pilot"
 cp "$REPO"/scripts/* "$ROOT/view_discriminator_pilot/"
 ```
@@ -83,9 +107,8 @@ export XLA_PYTHON_CLIENT_PREALLOCATE=false
 export PYTHONPATH=/root/gpufree-data/openpi/src:/root/gpufree-data/openpi/packages/openpi-client/src:/root/gpufree-data/robocasa:/root/gpufree-data/robosuite
 ```
 
-If RoboCasa uses its bundled/upstream robosuite checkout rather than a pip
-installation, place or link that checkout at `/root/gpufree-data/robosuite` and
-keep it on `PYTHONPATH`, matching the tested server layout.
+The pinned robosuite checkout is linked at `/root/gpufree-data/robosuite` and is
+kept on `PYTHONPATH`, matching the tested server layout.
 
 ## Download the original checkpoint
 
