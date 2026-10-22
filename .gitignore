@@ -21,6 +21,7 @@ checkpoint/pi05_pretrain_human300/
 # Adapter data products
 adapter_datasets/
 feature_cache/
+.cache/
 best_adapter.json
 metrics.json
 

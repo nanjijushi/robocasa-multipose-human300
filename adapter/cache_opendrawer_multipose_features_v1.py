@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shutil
 import sys
@@ -30,6 +31,7 @@ def cli():
     p.add_argument("--batch-size", type=int, default=4)
     p.add_argument("--max-examples", type=int)
     p.add_argument("--overwrite", action="store_true")
+    p.add_argument("--resume", action="store_true", help="Resume verified atomic batch shards")
     return p.parse_args()
 
 
@@ -41,14 +43,38 @@ def read_rgb(path: str, resize_with_pad):
 def main():
     a = cli()
     manifest = a.manifest_dir / "adapter_records.jsonl"
+    checkpoint_marker = a.checkpoint / "_CHECKPOINT_METADATA"
+    checkpoint_identity = checkpoint_marker.read_bytes() if checkpoint_marker.is_file() else str(a.checkpoint.resolve()).encode()
+    fingerprint = hashlib.sha256(
+        manifest.read_bytes() + checkpoint_identity + a.config.encode() + str(a.max_examples).encode()
+    ).hexdigest()
     rows = [json.loads(line) for line in manifest.read_text(encoding="utf-8").splitlines() if line.strip()]
     if a.max_examples is not None:
         rows = rows[:a.max_examples]
-    if a.output.exists():
-        if not a.overwrite:
-            raise FileExistsError(f"{a.output} exists; pass --overwrite")
+    state_path = a.output / "cache_state.json"
+    final_path = a.output / "opendrawer_multipose_features.npz"
+    if a.output.exists() and a.overwrite:
         shutil.rmtree(a.output)
+    elif a.output.exists() and not a.resume:
+        raise FileExistsError(f"{a.output} exists; pass --resume or --overwrite")
     a.output.mkdir(parents=True)
+    if state_path.exists():
+        prior = json.loads(state_path.read_text(encoding="utf-8"))
+        if prior.get("fingerprint") != fingerprint:
+            raise ValueError("Existing cache belongs to a different manifest/checkpoint/config; use --overwrite")
+        if prior.get("examples") != len(rows):
+            raise ValueError("Existing cache example count disagrees with current request; use --overwrite")
+        if final_path.is_file():
+            with np.load(final_path, allow_pickle=False) as completed:
+                if len(completed["scene_seed"]) != len(rows):
+                    raise ValueError("Completed cache length disagrees with current manifest")
+            print(json.dumps({"status": "already_complete", "dataset": str(final_path), "examples": len(rows)}))
+            return
+    else:
+        state_path.write_text(json.dumps({"fingerprint": fingerprint, "examples": len(rows),
+            "checkpoint": str(a.checkpoint.resolve()), "config": a.config}, indent=2), encoding="utf-8")
+    shard_dir = a.output / "shards"
+    shard_dir.mkdir(exist_ok=True)
     if not (a.checkpoint / "params").exists():
         raise FileNotFoundError(a.checkpoint / "params")
     sys.path.insert(0, str(OPENPI))
@@ -92,6 +118,15 @@ def main():
     started = time.time()
     for begin in range(0, len(rows), a.batch_size):
         batch_rows = rows[begin:begin + a.batch_size]
+        end = begin + len(batch_rows)
+        shard_path = shard_dir / f"batch_{begin:06d}_{end:06d}.npz"
+        if shard_path.is_file():
+            with np.load(shard_path, allow_pickle=False) as shard:
+                for index in range(4):
+                    sources[index].append(shard[f"source_{index}"])
+                    masks[index].append(shard[f"source_mask_{index}"])
+            print(f"reused {end}/{len(rows)}", flush=True)
+            continue
         camera_batches, token_batch, token_mask_batch = [[], [], []], [], []
         for row in batch_rows:
             for dst, key in zip(camera_batches, ("main", "right", "wrist"), strict=True):
@@ -101,12 +136,21 @@ def main():
             token_batch.append(tok); token_mask_batch.append(mask)
         visual, task = encode(state, tuple(jnp.asarray(np.stack(x)) for x in camera_batches),
                               jnp.asarray(np.stack(token_batch)), jnp.asarray(np.stack(token_mask_batch)))
-        for index, array in enumerate((*visual, task)):
-            sources[index].append(np.asarray(array, dtype=np.float16))
+        batch_sources = [np.asarray(array, dtype=np.float16) for array in (*visual, task)]
+        batch_masks = []
+        for index, array in enumerate(batch_sources):
+            sources[index].append(array)
         for index, array in enumerate(visual):
-            masks[index].append(np.ones(array.shape[:2], dtype=bool))
-        masks[3].append(np.asarray(token_mask_batch, dtype=bool))
-        print(f"encoded {begin + len(batch_rows)}/{len(rows)}", flush=True)
+            batch_masks.append(np.ones(array.shape[:2], dtype=bool))
+        batch_masks.append(np.asarray(token_mask_batch, dtype=bool))
+        for index, array in enumerate(batch_masks):
+            masks[index].append(array)
+        temporary = shard_path.with_suffix(".tmp.npz")
+        np.savez_compressed(temporary,
+            **{f"source_{i}": x for i, x in enumerate(batch_sources)},
+            **{f"source_mask_{i}": x for i, x in enumerate(batch_masks)})
+        temporary.replace(shard_path)
+        print(f"encoded {end}/{len(rows)}", flush=True)
 
     source_arrays = [np.concatenate(x) for x in sources]
     mask_arrays = [np.concatenate(x) for x in masks]
@@ -133,9 +177,11 @@ def main():
         "scene_seed": np.asarray([r["scene_seed"] for r in rows], np.int32),
         "pose_index": np.asarray([POSE_INDEX[r["pose"]] for r in rows], np.int8),
     }
-    dataset = a.output / "opendrawer_multipose_features.npz"
-    np.savez_compressed(dataset, **payload)
-    metadata = {"status": "complete", "examples": len(rows), "dataset": str(dataset),
+    temporary_final = final_path.with_suffix(".tmp.npz")
+    np.savez_compressed(temporary_final, **payload)
+    temporary_final.replace(final_path)
+    metadata = {"status": "complete", "examples": len(rows), "dataset": str(final_path),
+                "fingerprint": fingerprint,
                 "checkpoint": str(a.checkpoint), "checkpoint_modified": False,
                 "source_shapes": [list(x.shape) for x in source_arrays],
                 "geometry_order": ["dx_local_m", "dy_local_m", "xy_distance_m", "sin_bearing", "cos_bearing"],

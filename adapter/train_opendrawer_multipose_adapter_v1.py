@@ -143,7 +143,7 @@ def main():
         out["brier"] = float(np.mean((probs - rates) ** 2))
         return out
 
-    rng = np.random.default_rng(a.seed); best = math.inf; history = []; started = time.time()
+    rng = np.random.default_rng(a.seed); best = math.inf; best_state = None; history = []; started = time.time()
     for step in range(1, a.steps + 1):
         chosen = rng.choice(len(train_groups), a.scene_batch_size, replace=len(train_groups) < a.scene_batch_size)
         group_ids = train_groups[chosen].reshape(-1)
@@ -156,11 +156,14 @@ def main():
             history.append(row); print(json.dumps(row), flush=True)
             if val["loss"] < best:
                 best = val["loss"]
+                best_state = jax.tree.map(lambda x: jnp.array(x), state)
                 save_state(a.output / "best_adapter.npz", state, {"step": step, "val_loss": best,
                     "config": cfg.__dict__, "loss_weights": {"success": 1.0, "rank": a.rank_weight,
                     "distance": a.distance_weight, "geometry": a.geometry_weight,
                     "token_regularization": a.token_reg_weight}})
-    test = evaluate(state, test_groups)
+    if best_state is None:
+        raise RuntimeError("No validation checkpoint was selected")
+    test = evaluate(best_state, test_groups)
     summary = {"status": "complete", "dataset": str(a.dataset), "complete_train_scenes": len(train_groups),
         "partial_train_positions": len(partial_ids), "validation_scenes": len(val_groups), "test_scenes": len(test_groups),
         "best_val_loss": best, "final_test": test, "history": history, "elapsed_seconds": time.time() - started}

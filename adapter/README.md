@@ -74,9 +74,10 @@ DATA_ROOT/
     ...
 ```
 
-The verified study used 85 complete seeds (425 positions) and two partial seeds
-(5 positions), for 430 positions and 4,300 rollouts. The deterministic complete
-scene split is 60 train, 12 validation, and 13 test seeds.
+The split script discovers all complete five-pose seeds and deterministically
+uses approximately 70/15/15 percent for train/validation/test. Explicit counts
+can still be supplied with all three split arguments. Partial seeds remain
+training-only and never enter grouped ranking.
 
 ## Run
 
@@ -87,7 +88,7 @@ the root README. Then run on a CUDA-capable machine:
 cd /path/to/robocasa-multipose-human300
 conda activate robocasa
 
-export DATA_ROOT="/path/to/20261022-OpenDrawer_8卡_100seed_5位置_每位置10次"
+export DATA_ROOT="/wangxinhao/tmp/实验结果/OpenDrawer_8卡_100seed_5位置_每位置10次"
 export PI05_CHECKPOINT="$PWD/robocasa365_checkpoints/pi05_pretrain_human300/multitask_learning/75000"
 export WORK_ROOT="$PWD/outputs/opendrawer_multipose_adapter_v1"
 
@@ -100,6 +101,12 @@ training itself reads the cached NPZ and does not update the checkpoint.
 Outputs are written to `$WORK_ROOT/split`, `$WORK_ROOT/cache`, and
 `$WORK_ROOT/training`. The selected weights are
 `$WORK_ROOT/training/best_adapter.npz`.
+
+The launcher selects `/wangxinhao/envs/robocasa/bin/python` when present, then
+the tested `/opt/conda` environment, and finally `python` from `PATH`. Override
+`PYTHON_BIN` explicitly when needed. It also places tokenizer/download caches in
+the repository's persistent `.cache/openpi` directory. Feature extraction uses
+atomic per-batch shards and can resume after interruption with the same manifest.
 
 This stage learns current-pose feasibility `V(o,g)`. A later movement dataset
 with state transitions `(o_t, a_t, o_{t+1})` is required to learn repositioning

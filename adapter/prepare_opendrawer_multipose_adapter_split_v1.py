@@ -27,9 +27,9 @@ def parse_args():
     p.add_argument("--data-root", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--seed", type=int, default=20261022)
-    p.add_argument("--train-scenes", type=int, default=60)
-    p.add_argument("--val-scenes", type=int, default=12)
-    p.add_argument("--test-scenes", type=int, default=13)
+    p.add_argument("--train-scenes", type=int)
+    p.add_argument("--val-scenes", type=int)
+    p.add_argument("--test-scenes", type=int)
     return p.parse_args()
 
 
@@ -158,11 +158,18 @@ def main():
         target = complete if pose_set == expected and len(group) == len(POSES) else partial
         target[seed] = sorted(group, key=lambda r: POSES.index(r["pose"]))
 
-    expected_complete = a.train_scenes + a.val_scenes + a.test_scenes
-    if len(complete) != expected_complete:
+    requested = (a.train_scenes, a.val_scenes, a.test_scenes)
+    if all(x is None for x in requested):
+        # Deterministic 70/15/15 scene split, with the remainder assigned to test.
+        a.train_scenes = int(round(len(complete) * 0.70))
+        a.val_scenes = int(round(len(complete) * 0.15))
+        a.test_scenes = len(complete) - a.train_scenes - a.val_scenes
+    elif any(x is None for x in requested):
+        raise ValueError("Pass all of --train-scenes/--val-scenes/--test-scenes, or none of them")
+    if a.train_scenes + a.val_scenes + a.test_scenes != len(complete):
         raise ValueError(
-            f"Expected {expected_complete} complete five-pose seeds, found {len(complete)}; "
-            f"partial={ {k: [r['pose'] for r in v] for k, v in partial.items()} }"
+            f"Requested split totals {a.train_scenes + a.val_scenes + a.test_scenes}, "
+            f"but found {len(complete)} complete five-pose seeds"
         )
 
     summaries = {}

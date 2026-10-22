@@ -157,7 +157,7 @@ geometry. Raw experiment results and generated feature caches remain outside
 Git because they are machine-specific and large.
 
 ```bash
-export DATA_ROOT="/absolute/path/to/OpenDrawer_100seed_5pose_10trials"
+export DATA_ROOT="/wangxinhao/tmp/实验结果/OpenDrawer_8卡_100seed_5位置_每位置10次"
 export PI05_CHECKPOINT="$PWD/robocasa365_checkpoints/pi05_pretrain_human300/multitask_learning/75000"
 bash adapter/run_opendrawer_multipose_adapter_v1.sh \
   --steps 2000 --scene-batch-size 8

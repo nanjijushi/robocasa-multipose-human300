@@ -8,6 +8,8 @@ path.
 """
 from __future__ import annotations
 from typing import NamedTuple
+import os
+from pathlib import Path
 
 import einops
 import jax
@@ -16,9 +18,10 @@ import jax.numpy as jnp
 from openpi.models import model as model_lib
 from openpi.models.pi0 import make_attn_mask
 
-ORIGINAL_ROBOCASA_PI05_CHECKPOINT = (
-    "/root/gpufree-data/robocasa365_checkpoints/"
-    "pi05_pretrain_human300/multitask_learning/75000"
+_REPO = Path(__file__).resolve().parents[1]
+ORIGINAL_ROBOCASA_PI05_CHECKPOINT = os.environ.get(
+    "PI05_CHECKPOINT",
+    str(_REPO / "robocasa365_checkpoints/pi05_pretrain_human300/multitask_learning/75000"),
 )
 
 

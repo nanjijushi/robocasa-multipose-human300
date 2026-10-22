@@ -25,9 +25,6 @@ import optax
 from embodied_feasibility_adapter_v1 import EmbodiedFeasibilityAdapter, FeasibilityAdapterConfig
 from feasibility_losses_v1 import FeasibilityLossConfig, feasibility_adapter_loss
 
-BASE_CHECKPOINT = Path('/root/gpufree-data/robocasa365_checkpoints/pi05_pretrain_human300/multitask_learning/75000')
-
-
 def parse_args():
     p=argparse.ArgumentParser()
     p.add_argument('--dataset',type=Path,required=True); p.add_argument('--output',type=Path,required=True)
@@ -51,7 +48,6 @@ def save_state(path,state,metadata):
 
 def main():
     a=parse_args(); a.output.mkdir(parents=True,exist_ok=True)
-    if not (BASE_CHECKPOINT/'params').exists(): raise FileNotFoundError(BASE_CHECKPOINT/'params')
     data=np.load(a.dataset,allow_pickle=False)
     source_ids=sorted(int(k.split('_')[-1]) for k in data.files if k.startswith('source_') and not k.startswith('source_mask_'))
     if source_ids != list(range(len(source_ids))): raise ValueError(f'non-contiguous sources: {source_ids}')
@@ -111,8 +107,8 @@ def main():
         if step_n==1 or step_n%a.eval_interval==0 or step_n==a.steps:
             val=evaluate(state); row={'step':step_n,'train_loss':float(loss),'grad_norm':float(grad_norm),**{f'val_{k}':v for k,v in val.items()}}; history.append(row); print(json.dumps(row),flush=True)
             if val['loss']<best:
-                best=val['loss']; save_state(a.output/'best_adapter.npz',state,{'step':step_n,'val_loss':best,'config':cfg.__dict__,'loss_config':loss_cfg.__dict__,'base_checkpoint':str(BASE_CHECKPOINT)})
-    summary={'status':'complete','dataset':str(a.dataset),'base_checkpoint':str(BASE_CHECKPOINT),'base_checkpoint_modified':False,'train_examples':len(train_ids),'val_examples':len(val_ids),'best_val_loss':best,'config':cfg.__dict__,'loss_config':loss_cfg.__dict__,'history':history,'elapsed_seconds':time.time()-started}
+                best=val['loss']; save_state(a.output/'best_adapter.npz',state,{'step':step_n,'val_loss':best,'config':cfg.__dict__,'loss_config':loss_cfg.__dict__})
+    summary={'status':'complete','dataset':str(a.dataset),'base_checkpoint_modified':False,'train_examples':len(train_ids),'val_examples':len(val_ids),'best_val_loss':best,'config':cfg.__dict__,'loss_config':loss_cfg.__dict__,'history':history,'elapsed_seconds':time.time()-started}
     (a.output/'metrics.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2),encoding='utf-8'); print(json.dumps(summary,ensure_ascii=False,indent=2))
 if __name__=='__main__': main()
 
