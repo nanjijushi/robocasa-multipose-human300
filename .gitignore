@@ -18,3 +18,9 @@ checkpoint/pi05_pretrain_human300/
 *.npz
 *.npy
 
+# Adapter data products
+adapter_datasets/
+feature_cache/
+best_adapter.json
+metrics.json
+

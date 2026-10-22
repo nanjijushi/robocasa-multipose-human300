@@ -1,6 +1,6 @@
 # RoboCasa OpenDrawer Multi-Pose Dataset Toolkit
 
-This private repository packages the reproducible OpenDrawer base-pose generator,
+This public repository packages the reproducible OpenDrawer base-pose generator,
 the fixed-scene multi-pose evaluator, the RoboCasa/OpenPI source revisions, and the
 official original `pi05_pretrain_human300` checkpoint locator.
 
@@ -22,6 +22,9 @@ official original `pi05_pretrain_human300` checkpoint locator.
   `5ce6643f3092639d08f7b0f90ed1c6a84f50552c`.
 - `checkpoint/download_original_checkpoint.sh`: downloads the complete official
   original checkpoint from Hugging Face into the layout used by the scripts.
+- `adapter/`: task-conditioned embodied-feasibility Adapter, deterministic
+  dataset split, frozen Pi0.5 feature cache, grouped multi-pose trainer, and
+  method documentation.
 
 ## Checkout
 
@@ -143,6 +146,26 @@ Monitor it with:
 ```bash
 tmux attach -t opendrawer_40seed_4090_v1
 ```
+
+## Train the embodied-feasibility Adapter
+
+The Adapter learns current-pose OpenDrawer success from repeated rollouts while
+keeping the original Pi0.5 checkpoint frozen. Five poses from the same scene are
+ranked together, distance is used only as a success-tied secondary preference,
+and an auxiliary head requires the learned tokens to decode robot-centered
+geometry. Raw experiment results and generated feature caches remain outside
+Git because they are machine-specific and large.
+
+```bash
+export DATA_ROOT="/absolute/path/to/OpenDrawer_100seed_5pose_10trials"
+export PI05_CHECKPOINT="$PWD/robocasa365_checkpoints/pi05_pretrain_human300/multitask_learning/75000"
+bash adapter/run_opendrawer_multipose_adapter_v1.sh \
+  --steps 2000 --scene-batch-size 8
+```
+
+See [`adapter/README.md`](adapter/README.md) for the architecture, exact loss,
+split policy, expected dataset layout, outputs, and the distinction between
+static feasibility learning and later repositioning-advantage learning.
 
 ## Repository-specific OpenPI files
 
