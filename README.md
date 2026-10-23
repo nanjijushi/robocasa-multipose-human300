@@ -176,6 +176,25 @@ commit. `patches/openpi_robocasa_multipose.patch` adds the inference-only
 required by that evaluator. `scripts/setup_repository.sh` applies the patch and
 is safe to rerun.
 
+## Compare the pure mobility LoRA with the external repositioning module
+
+[`comparison_models/README.md`](comparison_models/README.md) contains the complete
+two-stage runtime and simulation clients for the pure Pi0.5 action-expert LoRA v2
+and the late standalone `joint_offline_value_reposition_v1` controller. Both move
+the base before handing off to the original manipulation policy. This is a
+comparison package, separate from the feasibility Adapter training pipeline.
+
+```bash
+python comparison_models/download_weights.py
+bash comparison_models/run_server.sh lora       # pure action-head baseline
+# Or, after stopping that server:
+bash comparison_models/run_server.sh external   # independent direction/stop module
+```
+
+Weights are versioned GitHub Release assets with SHA256 verification. The linked
+guide includes matching client commands, original training code, version
+provenance, and the conditions required for a fair performance comparison.
+
 ## Licenses
 
 RoboCasa is distributed under MIT and OpenPI under Apache-2.0. The checkpoint is

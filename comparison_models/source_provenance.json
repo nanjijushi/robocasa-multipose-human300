@@ -1,0 +1,48 @@
+{
+  "source_directory": "view_discriminator_pilot",
+  "files": [
+    {
+      "file": "serve_joint_offline_value_reposition_v1.py",
+      "original_sha256": "3b5f3919f9faffad878f5613cdc8c492aa807a1f733cca7c36ff35ab8a5f73d5"
+    },
+    {
+      "file": "train_joint_offline_value_reposition_v1.py",
+      "original_sha256": "fef8e8471b200b0248de7b1d533a95bbbb69297dfe81824ffdbf5de7577b61fb"
+    },
+    {
+      "file": "demo_joint_offline_value_reposition_v1.py",
+      "original_sha256": "a57a5aaf0331a49453445ef53449893f3e422f882123f9d337b6cc4f5a16459b"
+    },
+    {
+      "file": "demo_pure_mobility_lora_seed25_v1.py",
+      "original_sha256": "e5cca791b5f24e74164720234c11868f55cf8cf10b60c28005b186b8ff912dcf"
+    },
+    {
+      "file": "base_handle_distance_hud.py",
+      "original_sha256": "a8788266a31ab2577fa536844f01dd5ce1b1dbd329841b81834556c1acbfa3b3"
+    },
+    {
+      "file": "train_seed17_pi05_implicit_mobility_v1.py",
+      "original_sha256": "296406c7cb0d16c73507f02c14c29706caa472dd584f591f7286016ac7bbbebf"
+    },
+    {
+      "file": "serve_seed17_drawer_stage12.py",
+      "original_sha256": "0dc77c13bf577ae2e052cc58cb4e462ac40dfa6dd72aaae7034a12baaae1c3ec"
+    },
+    {
+      "file": "extract_three_scene_spatial_4x4_embeddings_v1.py",
+      "original_sha256": "dcea47b7a2e27870aab2a0f69202b2c81df23ea81acaeb4477005e91c0ce47bf"
+    }
+  ],
+  "changes": [
+    "Portable root and import paths",
+    "Default LoRA points to released pure v2",
+    "Unrelated optional policy checkpoint flags rejected",
+    "Training losses, action selection and stage handoff unchanged"
+  ],
+  "selection": {
+    "external": "2026-10-08 standalone joint value/action/stop module, before v12-v20 fusion",
+    "lora": "Explicit pure mobility baseline launcher used v2; v5 requires scorer feedback, so excluded from this two-arm comparison"
+  },
+  "limitations": "Chronology establishes late independent module, not a proven best across all experiments."
+}

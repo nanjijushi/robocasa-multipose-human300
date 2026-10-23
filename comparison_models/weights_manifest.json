@@ -1,0 +1,20 @@
+{
+  "repository": "nanjijushi/robocasa-multipose-human300",
+  "release_tag": "mobility-comparison-20261024",
+  "assets": [
+    {
+      "name": "pure_mobility_lora_v2.npz",
+      "bytes": 82051715,
+      "sha256": "16a0149c43a6f5931c1c1a4192642b91550fa4047534f93818c3a876bd7d3c33",
+      "source_folder": "seed17_seed19_seed31_pi05_balanced_yaw_mobility_lora_v2",
+      "best_step": 2300
+    },
+    {
+      "name": "external_joint_reposition_v1.pt",
+      "bytes": 3387749,
+      "sha256": "5fba937860a36aefac48105045d27323bcf53995d0489c37f73083c68d2a63bd",
+      "source_folder": "seed17_seed19_seed31_joint_offline_value_reposition_v1",
+      "best_step": 700
+    }
+  ]
+}

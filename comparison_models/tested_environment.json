@@ -1,0 +1,12 @@
+{
+  "jax": "0.5.3",
+  "jaxlib": "0.5.3",
+  "flax": "0.10.2",
+  "optax": "0.2.8",
+  "torch": "2.7.1",
+  "numpy": "2.2.5",
+  "pillow": "12.3.0",
+  "orbax-checkpoint": "0.11.13",
+  "transformers": "4.53.2",
+  "sentencepiece": "0.2.2"
+}

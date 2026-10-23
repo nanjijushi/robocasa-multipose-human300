@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-24",
+  "hardware": "NVIDIA GeForce RTX 4090",
+  "checks": {
+    "python_compile": "passed",
+    "shell_syntax": "passed",
+    "both_weight_sha256": "passed",
+    "lora_server_preflight": "passed",
+    "external_server_preflight": "passed",
+    "lora_real_weight_synthetic_gpu_inference": {
+      "status": "passed",
+      "actions_shape": [16, 12],
+      "finite_actions": true,
+      "arm_dimensions_zero": true
+    },
+    "external_real_weight_synthetic_gpu_inference": {
+      "status": "passed",
+      "action_probability_shape": [6],
+      "probabilities_sum_to_one": true,
+      "stop_probability_in_unit_interval": true
+    }
+  },
+  "limits": [
+    "GPU smoke checks used synthetic observations; no simulator actions executed",
+    "Interactive clients are ported historical code, not newly validated full rollouts",
+    "No new task-success comparison or best-version claim is established"
+  ]
+}
